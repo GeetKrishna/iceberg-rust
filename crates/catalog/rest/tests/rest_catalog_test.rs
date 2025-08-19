@@ -55,13 +55,7 @@ fn after_all() {
 async fn get_catalog() -> RestCatalog {
     set_up();
 
-    let rest_catalog_ip = {
-        let guard = DOCKER_COMPOSE_ENV.read().unwrap();
-        let docker_compose = guard.as_ref().unwrap();
-        docker_compose.get_container_ip("rest")
-    };
-
-    let rest_socket_addr = SocketAddr::new(rest_catalog_ip, REST_CATALOG_PORT);
+    let rest_socket_addr = SocketAddr::new([127, 0, 0, 1].into(), REST_CATALOG_PORT);
     while !scan_port_addr(rest_socket_addr) {
         info!("Waiting for 1s rest catalog to ready...");
         sleep(std::time::Duration::from_millis(1000)).await;

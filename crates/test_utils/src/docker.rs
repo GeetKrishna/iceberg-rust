@@ -68,13 +68,12 @@ impl DockerCompose {
     }
 
     pub fn up(&self) {
-        let mut cmd = Command::new("docker");
+        let mut cmd = Command::new("docker-compose");
         cmd.current_dir(&self.docker_compose_dir);
 
         cmd.env("DOCKER_DEFAULT_PLATFORM", Self::get_os_arch());
 
         cmd.args(vec![
-            "compose",
             "-p",
             self.project_name.as_str(),
             "up",
@@ -93,13 +92,12 @@ impl DockerCompose {
         );
 
         if !ret {
-            let mut cmd = Command::new("docker");
+            let mut cmd = Command::new("docker-compose");
             cmd.current_dir(&self.docker_compose_dir);
 
             cmd.env("DOCKER_DEFAULT_PLATFORM", Self::get_os_arch());
 
             cmd.args(vec![
-                "compose",
                 "-p",
                 self.project_name.as_str(),
                 "logs",
@@ -111,11 +109,10 @@ impl DockerCompose {
     }
 
     pub fn down(&self) {
-        let mut cmd = Command::new("docker");
+        let mut cmd = Command::new("docker-compose");
         cmd.current_dir(&self.docker_compose_dir);
 
         cmd.args(vec![
-            "compose",
             "-p",
             self.project_name.as_str(),
             "down",

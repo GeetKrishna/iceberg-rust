@@ -40,17 +40,14 @@ pub fn set_test_fixture(func: &str) -> TestFixture {
     docker_compose.down();
     docker_compose.up();
 
-    let rest_catalog_ip = docker_compose.get_container_ip("rest");
-    let minio_ip = docker_compose.get_container_ip("minio");
-
     let catalog_config = HashMap::from([
         (
             REST_CATALOG_PROP_URI.to_string(),
-            format!("http://{}:{}", rest_catalog_ip, REST_CATALOG_PORT),
+            format!("http://127.0.0.1:{}", REST_CATALOG_PORT),
         ),
         (
             S3_ENDPOINT.to_string(),
-            format!("http://{}:{}", minio_ip, 9000),
+            "http://127.0.0.1:9000".to_string(),
         ),
         (S3_ACCESS_KEY_ID.to_string(), "admin".to_string()),
         (S3_SECRET_ACCESS_KEY.to_string(), "password".to_string()),

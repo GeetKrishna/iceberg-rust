@@ -57,26 +57,21 @@ fn after_all() {
 async fn get_catalog() -> HmsCatalog {
     set_up();
 
-    let (hms_catalog_ip, minio_ip) = {
-        let guard = DOCKER_COMPOSE_ENV.read().unwrap();
-        let docker_compose = guard.as_ref().unwrap();
-        (
-            docker_compose.get_container_ip("hive-metastore"),
-            docker_compose.get_container_ip("minio"),
-        )
-    };
-    let hms_socket_addr = SocketAddr::new(hms_catalog_ip, HMS_CATALOG_PORT);
-    let minio_socket_addr = SocketAddr::new(minio_ip, MINIO_PORT);
-    while !scan_port_addr(hms_socket_addr) {
-        info!("scan hms_socket_addr {} check", hms_socket_addr);
-        info!("Waiting for 1s hms catalog to ready...");
+    let hms_socket_addr = SocketAddr::new([127, 0, 0, 1].into(), HMS_CATALOG_PORT);
+    let minio_socket_addr = SocketAddr::new([127, 0, 0, 1].into(), MINIO_PORT);
+    let mut retries = 0;
+    while !scan_port_addr(hms_socket_addr) && retries < 60 {
+        info!("Waiting for 1s hms catalog to ready... (attempt {})", retries + 1);
+        sleep(std::time::Duration::from_millis(1000)).await;
+        retries += 1;
+    }
+    
+    while !scan_port_addr(minio_socket_addr) {
+        info!("Waiting for minio to ready...");
         sleep(std::time::Duration::from_millis(1000)).await;
     }
 
-    while !scan_port_addr(minio_socket_addr) {
-        info!("Waiting for 1s minio to ready...");
-        sleep(std::time::Duration::from_millis(1000)).await;
-    }
+    sleep(std::time::Duration::from_millis(15000)).await;
 
     let props = HashMap::from([
         (
@@ -87,24 +82,6 @@ async fn get_catalog() -> HmsCatalog {
         (S3_SECRET_ACCESS_KEY.to_string(), "password".to_string()),
         (S3_REGION.to_string(), "us-east-1".to_string()),
     ]);
-
-    // Wait for bucket to actually exist
-    let file_io = iceberg::io::FileIO::from_path("s3a://")
-        .unwrap()
-        .with_props(props.clone())
-        .build()
-        .unwrap();
-
-    let mut retries = 0;
-    while retries < 30 {
-        if file_io.exists("s3a://warehouse/").await.unwrap_or(false) {
-            info!("S3 bucket 'warehouse' is ready");
-            break;
-        }
-        info!("Waiting for bucket creation... (attempt {})", retries + 1);
-        sleep(std::time::Duration::from_millis(1000)).await;
-        retries += 1;
-    }
 
     let config = HmsCatalogConfig::builder()
         .address(hms_socket_addr.to_string())

@@ -58,16 +58,8 @@ fn after_all() {
 async fn get_catalog() -> GlueCatalog {
     set_up();
 
-    let (glue_catalog_ip, minio_ip) = {
-        let guard = DOCKER_COMPOSE_ENV.read().unwrap();
-        let docker_compose = guard.as_ref().unwrap();
-        (
-            docker_compose.get_container_ip("moto"),
-            docker_compose.get_container_ip("minio"),
-        )
-    };
-    let glue_socket_addr = SocketAddr::new(glue_catalog_ip, GLUE_CATALOG_PORT);
-    let minio_socket_addr = SocketAddr::new(minio_ip, MINIO_PORT);
+    let glue_socket_addr = SocketAddr::new([127, 0, 0, 1].into(), GLUE_CATALOG_PORT);
+    let minio_socket_addr = SocketAddr::new([127, 0, 0, 1].into(), MINIO_PORT);
     while !scan_port_addr(glue_socket_addr) {
         info!("Waiting for 1s glue catalog to ready...");
         sleep(std::time::Duration::from_millis(1000)).await;
